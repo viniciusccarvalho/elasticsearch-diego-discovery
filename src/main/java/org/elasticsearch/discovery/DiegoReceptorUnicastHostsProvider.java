@@ -2,11 +2,14 @@ package org.elasticsearch.discovery;
 
 import io.pivotal.receptor.commands.ActualLRPResponse;
 import io.pivotal.receptor.commands.DesiredLRPResponse;
+import io.pivotal.receptor.support.Port;
+import org.elasticsearch.Version;
 import org.elasticsearch.cluster.node.DiscoveryNode;
 import org.elasticsearch.common.component.AbstractComponent;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.network.NetworkService;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.discovery.zen.ping.unicast.UnicastHostsProvider;
 import org.elasticsearch.service.DiegoReceptorClient;
 import org.elasticsearch.transport.TransportService;
@@ -24,14 +27,18 @@ public class DiegoReceptorUnicastHostsProvider extends AbstractComponent impleme
     private final DiegoReceptorClient client;
     private final TransportService transportService;
     private final NetworkService networkService;
+    private final Version version;
+
+    private int serverPort;
 
     @Inject
-    public DiegoReceptorUnicastHostsProvider(DiegoReceptorClient client, Settings settings, TransportService transportService, NetworkService networkService){
+    public DiegoReceptorUnicastHostsProvider(DiegoReceptorClient client, Version version, Settings settings, TransportService transportService, NetworkService networkService){
         super(settings);
         this.transportService = transportService;
         this.client = client;
         this.networkService = networkService;
-
+        this.serverPort = settings.getAsInt("transport.tcp.port",9300);
+        this.version = version;
     }
 
 
@@ -53,13 +60,29 @@ public class DiegoReceptorUnicastHostsProvider extends AbstractComponent impleme
             }
         } catch (IOException e) {
         }
-
+        logger.debug("This node ip address{} ", ipAddress);
 
         for(ActualLRPResponse lrp : lrps){
-            
+            try {
+                TransportAddress[] transportAddresses = transportService.addressesFromString(lrp.getAddress()+":"+findPort(lrp.getPorts()));
+                nodes.add(new DiscoveryNode("elasticsearch-"+lrp.getInstanceGuid(),transportAddresses[0],version.minimumCompatibilityVersion()));
+            } catch (Exception e) {
+                logger.error("Could not create transport address for lrp: {}", lrp);
+            }
+
         }
 
+        logger.debug("Found nodes: {}", nodes);
 
         return nodes;
+    }
+
+    private Port findPort(Port[] ports){
+
+        for(Port port : ports){
+            if(port.getContainerPort() == this.serverPort)
+                return port;
+        }
+        return null;
     }
 }
