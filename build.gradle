@@ -3,13 +3,17 @@ apply plugin: 'eclipse'
 apply plugin: 'idea'
 apply plugin:'application'
 
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
 configurations {
     provided
     compile.extendsFrom provided
 }
 
-
-version = '0.0.1'
+archivesBaseName = 'diego-discovery-plugin'
+version = '1.0.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -20,26 +24,21 @@ repositories {
 
 
 dependencies {
-        provided 'org.elasticsearch:elasticsearch:1.4.0'
+        provided 'org.elasticsearch:elasticsearch:1.4.1'
+        compile 'org.apache.httpcomponents:httpclient:4.3.6'
     compile("com.fasterxml.jackson.core:jackson-databind:2.5.1")
     compile("org.springframework:spring-web:4.1.5.RELEASE")
         testCompile 'junit:junit:4.8.2'
 	    testCompile 'org.mockito:mockito-all:1.9.5'
 }
 
-
 jar {
-    from { 
-		configurations.compile.collect { 
-				if(it.isDirectory()){
-					it
-				}else{
-					filtered = zipTree(it).matching {
-						exclude "**/*.java"
-					}
-					filtered
-				}
-
-			} 
-		}
+    extension = 'zip'
+    dependsOn configurations.runtime
+    from {
+        (configurations.runtime - configurations.provided).collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
 }
+

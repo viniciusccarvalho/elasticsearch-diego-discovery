@@ -35,8 +35,7 @@ public class DiegoReceptorUnicastHostsProvider extends AbstractComponent impleme
     public DiegoReceptorUnicastHostsProvider(Version version, Settings settings, TransportService transportService, NetworkService networkService){
         super(settings);
         this.transportService = transportService;
-        logger.debug("Setting receptor endpoint to {}", settings.get("diego.receptor"));
-        this.client = new DiegoReceptorClient(settings.get("diego.receptor","http://receptor.10.1.1.11.xip.io"));
+        this.client = new DiegoReceptorClient(settings);
         this.networkService = networkService;
         this.serverPort = settings.getAsInt("transport.tcp.port",9300);
         this.version = version;
@@ -65,7 +64,7 @@ public class DiegoReceptorUnicastHostsProvider extends AbstractComponent impleme
 
         for(ActualLRPResponse lrp : lrps){
             try {
-                TransportAddress[] transportAddresses = transportService.addressesFromString(lrp.getAddress()+":"+findPort(lrp.getPorts()));
+                TransportAddress[] transportAddresses = transportService.addressesFromString(lrp.getAddress()+":"+findPort(lrp.getPorts()).getHostPort());
                 nodes.add(new DiscoveryNode("elasticsearch-"+lrp.getInstanceGuid(),transportAddresses[0],version.minimumCompatibilityVersion()));
             } catch (Exception e) {
                 logger.error("Could not create transport address for lrp: {}", lrp);
