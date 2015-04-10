@@ -13,8 +13,8 @@ public class DiegoReceptorClient {
 
     private final ReceptorClient client;
 
-    public DiegoReceptorClient(){
-        this.client = new ReceptorClient("");
+    public DiegoReceptorClient(String receptorHost){
+        this.client = new ReceptorClient(receptorHost);
     }
 
     public List<ActualLRPResponse> getActualLRPs() {

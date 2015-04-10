@@ -32,10 +32,11 @@ public class DiegoReceptorUnicastHostsProvider extends AbstractComponent impleme
     private int serverPort;
 
     @Inject
-    public DiegoReceptorUnicastHostsProvider(DiegoReceptorClient client, Version version, Settings settings, TransportService transportService, NetworkService networkService){
+    public DiegoReceptorUnicastHostsProvider(Version version, Settings settings, TransportService transportService, NetworkService networkService){
         super(settings);
         this.transportService = transportService;
-        this.client = client;
+        logger.debug("Setting receptor endpoint to {}", settings.get("diego.receptor"));
+        this.client = new DiegoReceptorClient(settings.get("diego.receptor","http://receptor.10.1.1.11.xip.io"));
         this.networkService = networkService;
         this.serverPort = settings.getAsInt("transport.tcp.port",9300);
         this.version = version;
