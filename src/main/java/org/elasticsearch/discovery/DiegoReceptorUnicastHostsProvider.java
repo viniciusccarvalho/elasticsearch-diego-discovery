@@ -34,6 +34,7 @@ public class DiegoReceptorUnicastHostsProvider extends AbstractComponent impleme
     @Inject
     public DiegoReceptorUnicastHostsProvider(Version version, Settings settings, TransportService transportService, NetworkService networkService){
         super(settings);
+
         this.transportService = transportService;
         this.client = new DiegoReceptorClient(settings);
         this.networkService = networkService;
@@ -63,13 +64,14 @@ public class DiegoReceptorUnicastHostsProvider extends AbstractComponent impleme
         logger.debug("This node ip address{} ", ipAddress);
 
         for(ActualLRPResponse lrp : lrps){
-            try {
-                TransportAddress[] transportAddresses = transportService.addressesFromString(lrp.getAddress()+":"+findPort(lrp.getPorts()).getHostPort());
-                nodes.add(new DiscoveryNode("elasticsearch-"+lrp.getInstanceGuid(),transportAddresses[0],version.minimumCompatibilityVersion()));
-            } catch (Exception e) {
-                logger.error("Could not create transport address for lrp: {}", lrp);
+            if(lrp.getState().equals("RUNNING")) {
+                try {
+                    TransportAddress[] transportAddresses = transportService.addressesFromString(lrp.getAddress() + ":" + findPort(lrp.getPorts()).getHostPort());
+                    nodes.add(new DiscoveryNode("elasticsearch-" + lrp.getInstanceGuid(), transportAddresses[0], version.minimumCompatibilityVersion()));
+                } catch (Exception e) {
+                    logger.error("Could not create transport address for lrp: {}", lrp);
+                }
             }
-
         }
 
         logger.debug("Found nodes: {}", nodes);
